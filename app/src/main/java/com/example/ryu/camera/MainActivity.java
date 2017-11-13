@@ -2,6 +2,7 @@ package com.example.ryu.camera;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Camera;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraDevice;
@@ -12,19 +13,50 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
+
+import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity {
     android.hardware.Camera mCamera =null;
     SurfaceTexture mSurface = null;
     Button btn ;
+    int w=0,h=0;
+    ImageView img;
+    //test opencv
+    static{
+        if(!OpenCVLoader.initDebug())
+        {
+            Log.e("Ryu","Opencv not loaded");
+        }
+        else
+        {
+            Log.e("Ryu","Opencv ready");
+        }
+    }
+    //
     private android.hardware.Camera.PictureCallback mPicture = new android.hardware.Camera.PictureCallback() {
 
         @Override
         public void onPictureTaken(byte[] bytes, android.hardware.Camera camera) {
-            Log.e("Ryu"," here 2");
-            Log.e("Ryu","data length: "+bytes.length);
-            //
-//            mCamera.takePicture(null,null,mPicture);
+            Log.e("Ryu","data length: "+bytes.length + "w: "+w +"h: "+h);
+            //logic code here
+            Mat mat = Imgcodecs.imdecode(new MatOfByte(bytes), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
+            //display image to image view
+            Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(),Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(mat, bm);
+            img = (ImageView) findViewById(R.id.imageView);
+            img.setImageBitmap(bm);
+            ///
+
         }
 
     };
@@ -44,20 +76,22 @@ public class MainActivity extends AppCompatActivity {
     {
          mSurface = new SurfaceTexture(10);
         try{
-            Log.e("Ryu","ryu here1");
             mCamera = android.hardware.Camera.open();
-            Log.e("Ryu","ryu here");
+            android.hardware.Camera.Parameters param = mCamera.getParameters();
+            List<android.hardware.Camera.Size> listSize = param.getSupportedPictureSizes();
+            for (android.hardware.Camera.Size size : listSize) {
+                if (size.width > w || size.height > h) {
+                    w = size.width;
+                    h = size.height;
+                }
+
+            }
             mCamera.setPreviewTexture(mSurface);
+
             Log.e("Ryu","ryu here");
             mCamera.startPreview();
             Log.e("Ryu","ryu here");
-//            mCamera.takePicture(null,null,mPicture);
-//            mCamera.setPreviewCallback(new android.hardware.Camera.PreviewCallback() {
-//                @Override
-//                public void onPreviewFrame(byte[] bytes, android.hardware.Camera camera) {
-//                    Log.e("Ryu","data length: "+bytes.length);
-//                }
-//            });
+
         }
         catch (Exception ex)
         {
